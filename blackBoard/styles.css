@@ -1,0 +1,35 @@
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 0px 80px;
+  background-color: black;
+}
+
+button {
+  cursor: pointer;
+}
+
+#canvas {
+  border: 2px solid white;
+}
+
+.btn {
+  height: 40px;
+  width: 60px;
+  border: none;
+}
+
+#clear-btn {
+  background-color: red;
+  color: white;
+}
+
+.btn-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 8px;
+}
