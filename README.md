@@ -1,1 +1,2 @@
-### Some mini projects to practice Javascript/Typescript together with canvas HTML
+### Some mini projects to practice JavaScript/TypeScript together with canvas HTML
+Run with a server, or use "Live Server" extension from VSCode
