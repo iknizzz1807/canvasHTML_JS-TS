@@ -1,0 +1,44 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  gap: 200px;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 600px;
+  height: 600px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  height: 160px;
+  width: 100%;
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.item {
+  background-color: gray;
+  width: 160px;
+  height: 160px;
+}
+
+.draggable {
+  cursor: move;
+}
+
+.drop-container {
+  position: relative;
+}
+
+.dropzone {
+  background-color: lightgray;
+  position: relative;
+}

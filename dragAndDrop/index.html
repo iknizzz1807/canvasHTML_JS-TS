@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drag and Drop</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div
+          class="item draggable"
+          style="background-color: blue"
+          draggable="true"
+          id="draggable1"
+        ></div>
+        <div
+          class="item draggable"
+          style="background-color: red"
+          draggable="true"
+          id="draggable2"
+        ></div>
+        <div
+          class="item draggable"
+          style="background-color: yellow"
+          draggable="true"
+          id="draggable3"
+        ></div>
+      </div>
+      <div class="row">
+        <div
+          class="item draggable"
+          style="background-color: green"
+          draggable="true"
+          id="draggable4"
+        ></div>
+        <div
+          class="item draggable"
+          style="background-color: purple"
+          draggable="true"
+          id="draggable5"
+        ></div>
+        <div
+          class="item draggable"
+          style="background-color: orange"
+          draggable="true"
+          id="draggable6"
+        ></div>
+      </div>
+    </div>
+    <div class="container drop-container">
+      <div class="row">
+        <div class="item dropzone"></div>
+        <div class="item dropzone"></div>
+        <div class="item dropzone"></div>
+      </div>
+      <div class="row">
+        <div class="item dropzone"></div>
+        <div class="item dropzone"></div>
+        <div class="item dropzone"></div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
