@@ -20,6 +20,60 @@ class Vector2D {
             : new Vector2D(0, 0);
     }
 }
+// Canvas class
+class Canvas {
+    constructor() {
+        this.canvas = document.getElementById("canvas");
+        if (this.canvas)
+            this.ctx = this.canvas.getContext("2d");
+        this.width = 1400;
+        this.height = 700;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+    }
+    initCanvas() {
+        if (this.ctx) {
+            this.ctx.fillStyle = "gray";
+            this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+    }
+    drawRect(position, width, height, color) {
+        if (this.ctx) {
+            this.ctx.fillStyle = color;
+            this.ctx.fillRect(position.x, position.y, width, height);
+        }
+    }
+    drawCircle(position, radius, color) {
+        if (this.ctx) {
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            this.ctx.arc(position.x, position.y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    }
+    drawStroke(position, width, height, color) {
+        if (this.ctx) {
+            this.ctx.strokeStyle = color;
+            this.ctx.strokeRect(position.x, position.y, width, height);
+        }
+    }
+    drawText(text, position, color) {
+        if (this.ctx) {
+            this.ctx.fillStyle = color;
+            this.ctx.font = "20px Arial";
+            this.ctx.fillText(text, position.x, position.y);
+        }
+    }
+    getCanvas() {
+        return this.canvas;
+    }
+    getWidth() {
+        return this.width;
+    }
+    getHeight() {
+        return this.height;
+    }
+}
 class Bullet {
     constructor(position, direction) {
         this.position = position;
@@ -78,7 +132,8 @@ class Bullet {
 class Player {
     constructor(position) {
         this.id = Math.random() * 1000;
-        this.hp = 10;
+        this.currentHP = 10;
+        this.maxHP = 10;
         this.position = position;
         this.currentVelocity = new Vector2D(0, 0);
         this.maxVelocity = 400;
@@ -88,7 +143,7 @@ class Player {
         this.isShooting = false;
         this.width = 50;
         this.height = 50;
-        this.color = "red";
+        this.color = "blue";
     }
     getPlayer() {
         return this;
@@ -105,14 +160,17 @@ class Player {
     setInput(direction) {
         this.input = direction;
     }
-    reduceHealth(amount) {
-        this.hp -= amount;
+    reduceHP(amount) {
+        this.currentHP -= amount;
         // this.color = "green";
-        if (this.hp < 0)
-            this.hp = 0;
+        if (this.currentHP < 0)
+            this.currentHP = 0;
     }
-    getHealth() {
-        return this.hp;
+    getCurrentHP() {
+        return this.currentHP;
+    }
+    getMaxHP() {
+        return this.maxHP;
     }
     getColor() {
         return this.color;
@@ -163,52 +221,32 @@ class Player {
         return bullet;
     }
 }
-// Canvas class
-class Canvas {
+class Enemy {
     constructor() {
-        this.canvas = document.getElementById("canvas");
-        if (this.canvas)
-            this.ctx = this.canvas.getContext("2d");
-        this.width = 1400;
-        this.height = 700;
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
+        this.position = null;
+        this.speed = 0.5;
+        this.playerToFollow = null;
+        this.hp = 10;
     }
-    initCanvas() {
-        if (this.ctx) {
-            this.ctx.fillStyle = "gray";
-            this.ctx.fillRect(0, 0, this.width, this.height);
+    followPlayer(player) {
+        this.playerToFollow = player;
+    }
+    setPosition(pos) {
+        this.position = new Vector2D(pos.x, pos.y);
+    }
+    getPosition() {
+        if (this.position)
+            return this.position;
+    }
+    update() {
+        if (this.playerToFollow && this.position) {
+            const playerPos = this.playerToFollow.getPosition();
+            const direction = playerPos
+                .add(new Vector2D(-this.position.x, -this.position.y))
+                .normalize();
+            const speed = this.speed;
+            this.position = new Vector2D(this.position.x + direction.x * speed, this.position.y + direction.y * speed);
         }
-    }
-    drawRect(position, width, height, color) {
-        if (this.ctx) {
-            this.ctx.fillStyle = color;
-            this.ctx.fillRect(position.x, position.y, width, height);
-        }
-    }
-    drawCircle(position, radius, color) {
-        if (this.ctx) {
-            this.ctx.fillStyle = color;
-            this.ctx.beginPath();
-            this.ctx.arc(position.x, position.y, radius, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-    }
-    drawText(text, position, color) {
-        if (this.ctx) {
-            this.ctx.fillStyle = color;
-            this.ctx.font = "20px Arial";
-            this.ctx.fillText(text, position.x, position.y);
-        }
-    }
-    getCanvas() {
-        return this.canvas;
-    }
-    getWidth() {
-        return this.width;
-    }
-    getHeight() {
-        return this.height;
     }
 }
 class Game {
@@ -217,11 +255,13 @@ class Game {
         this.canvas = new Canvas();
         this.canvas.initCanvas();
         this.players = [];
+        this.enemies = [];
         this.lastTime = 0;
-        this.fps = 60;
-        // this.frameTime = 1000 / this.fps;
         this.keysPressed = {};
         this.bullets = [];
+        setInterval(() => {
+            this.spawnEnemy();
+        }, 10000);
         window.addEventListener("keydown", (event) => {
             this.keysPressed[event.key.toLowerCase()] = true;
             this.updatePlayerInput();
@@ -261,6 +301,21 @@ class Game {
     }
     addPlayer(newPlayer) {
         this.players.push(newPlayer);
+        this.spawnEnemy();
+    }
+    spawnEnemy() {
+        const player = this.players[0];
+        const minDistance = 500; // Spawn far away from the player
+        let newEnemyPosition;
+        do {
+            newEnemyPosition = new Vector2D(Math.random() * this.canvas.getWidth(), Math.random() * this.canvas.getHeight());
+        } while (newEnemyPosition
+            .add(new Vector2D(-player.getPosition().x, -player.getPosition().y))
+            .magnitude() < minDistance);
+        const newEnemy = new Enemy();
+        newEnemy.followPlayer(player);
+        newEnemy.setPosition(newEnemyPosition);
+        this.enemies.push(newEnemy);
     }
     //   ____    _    __  __ _____   _     ___   ___  ____
     //  / ___|  / \  |  \/  | ____| | |   / _ \ / _ \|  _ \
@@ -271,13 +326,16 @@ class Game {
         const deltaTime = Math.min((currentTime - this.lastTime) / 1000, 0.1);
         this.lastTime = currentTime;
         this.canvas.initCanvas();
+        // Draw players
         this.players.forEach((player) => {
             player.update(deltaTime, this.canvas.getWidth(), this.canvas.getHeight());
             this.canvas.drawRect(player.getPosition(), player.getWidth(), player.getHeight(), player.getColor());
-            // Debug health
-            const healthPosition = new Vector2D(player.getPosition().x + 12, player.getPosition().y - 8);
-            this.canvas.drawText(player.getHealth().toString(), healthPosition, "black");
+            // Draw health bar
+            const healthBarPos = new Vector2D(player.getPosition().x, player.getPosition().y - 8);
+            this.canvas.drawRect(healthBarPos, (player.getWidth() * player.getCurrentHP()) / player.getMaxHP(), 4, "red");
+            this.canvas.drawStroke(healthBarPos, (player.getWidth() * player.getCurrentHP()) / player.getMaxHP(), 5, "white");
         });
+        // Draw bullets
         this.bullets.forEach((bullet) => {
             if (bullet.getCollideTime() <= 5) {
                 bullet.update(deltaTime, this.canvas.getWidth(), this.canvas.getHeight());
@@ -285,13 +343,21 @@ class Game {
                 // Check collision with players
                 this.players.forEach((player) => {
                     if (bullet.checkCollision(player)) {
-                        player.reduceHealth(2);
+                        player.reduceHP(2);
                         this.bullets = this.bullets.filter((b) => b !== bullet);
                     }
                 });
             }
             else {
                 this.bullets = this.bullets.filter((b) => b !== bullet);
+            }
+        });
+        // Draw enemies
+        this.enemies.forEach((enemy) => {
+            const pos = enemy.getPosition();
+            if (pos) {
+                enemy.update();
+                this.canvas.drawRect(pos, 30, 30, "green");
             }
         });
         requestAnimationFrame((time) => this.gameLoop(time));
