@@ -142,25 +142,6 @@ class Bullet {
   getCollideTime() {
     return this.hasCollided;
   }
-  checkCollision(player: Player): boolean {
-    const bulletLeft = this.position.x - this.radius;
-    const bulletRight = this.position.x + this.radius;
-    const bulletTop = this.position.y - this.radius;
-    const bulletBottom = this.position.y + this.radius;
-
-    const playerLeft = player.getPosition().x;
-    const playerRight = player.getPosition().x + player.getWidth();
-    const playerTop = player.getPosition().y;
-    const playerBottom = player.getPosition().y + player.getHeight();
-
-    return (
-      bulletRight > playerLeft &&
-      bulletLeft < playerRight &&
-      bulletBottom > playerTop &&
-      bulletTop < playerBottom &&
-      this.hasCollided >= 1
-    );
-  }
 }
 
 class Player {
@@ -302,13 +283,29 @@ class Enemy {
   private playerToFollow: Player | null;
   private position: Vector2D | null;
   private speed: number;
-  private hp: number;
+  private maxHP: number;
+  private currentHP: number;
+  private width: number;
+  private height: number;
+  private color: string;
 
   constructor() {
     this.position = null;
     this.speed = 0.5;
     this.playerToFollow = null;
-    this.hp = 10;
+    this.maxHP = 10;
+    this.currentHP = 10;
+    this.width = 30;
+    this.height = 30;
+    this.color = "green";
+  }
+
+  getWidth() {
+    return this.width;
+  }
+
+  getHeight() {
+    return this.height;
   }
 
   followPlayer(player: Player) {
@@ -321,6 +318,22 @@ class Enemy {
 
   getPosition() {
     if (this.position) return this.position;
+  }
+
+  getCurrentHP() {
+    return this.currentHP;
+  }
+
+  getColor() {
+    return this.color;
+  }
+  getMaxHP() {
+    return this.maxHP;
+  }
+
+  reduceHP(amount: number) {
+    this.currentHP -= amount;
+    if (this.currentHP <= 0) this.currentHP = 0;
   }
 
   update() {
@@ -345,6 +358,7 @@ class Game {
   private lastTime: number;
   private keysPressed: { [key: string]: boolean };
   private bullets: Bullet[];
+  private score: number;
 
   constructor() {
     this.canvas = new Canvas();
@@ -354,9 +368,10 @@ class Game {
     this.lastTime = 0;
     this.keysPressed = {};
     this.bullets = [];
+    this.score = 0;
     setInterval(() => {
       this.spawnEnemy();
-    }, 10000);
+    }, 2000);
 
     window.addEventListener("keydown", (event: KeyboardEvent) => {
       this.keysPressed[event.key.toLowerCase()] = true;
@@ -425,6 +440,67 @@ class Game {
     newEnemy.setPosition(newEnemyPosition);
     this.enemies.push(newEnemy);
   }
+
+  checkCollisionBullet(bullet: Bullet, target: Player | Enemy): boolean {
+    const bulletLeft = bullet.getPosition().x - bullet.getRadius();
+    const bulletRight = bullet.getPosition().x + bullet.getRadius();
+    const bulletTop = bullet.getPosition().y - bullet.getRadius();
+    const bulletBottom = bullet.getPosition().y + bullet.getRadius();
+
+    const targetPosition = target.getPosition();
+    if (!targetPosition) return false;
+    const targetLeft = targetPosition.x;
+    const targetRight = targetPosition.x + target.getWidth();
+    const targetTop = targetPosition.y;
+    const targetBottom = targetPosition.y + target.getHeight();
+
+    if (target instanceof Player) {
+      return (
+        bulletRight > targetLeft &&
+        bulletLeft < targetRight &&
+        bulletBottom > targetTop &&
+        bulletTop < targetBottom &&
+        bullet.getCollideTime() >= 1
+      );
+    } else
+      return (
+        bulletRight > targetLeft &&
+        bulletLeft < targetRight &&
+        bulletBottom > targetTop &&
+        bulletTop < targetBottom
+      );
+  }
+
+  checkCollisionEnemy(enemy: Enemy, player: Player): boolean {
+    const enemyPos = enemy.getPosition();
+    if (!enemyPos) return false;
+
+    const enemyLeft = enemyPos.x;
+    const enemyRight = enemyPos.x + enemy.getWidth();
+    const enemyTop = enemyPos.y;
+    const enemyBottom = enemyPos.y + enemy.getHeight();
+
+    const playerPos = player.getPosition();
+    const playerLeft = playerPos.x;
+    const playerRight = playerPos.x + player.getWidth();
+    const playerTop = playerPos.y;
+    const playerBottom = playerPos.y + player.getHeight();
+
+    return (
+      enemyRight >= playerLeft &&
+      enemyLeft <= playerRight &&
+      enemyBottom >= playerTop &&
+      enemyTop <= playerBottom
+    );
+  }
+
+  deleteEnemy(enemy: Enemy) {
+    this.enemies = this.enemies.filter((e) => e !== enemy);
+  }
+
+  deleteBullet(bullet: Bullet) {
+    this.bullets = this.bullets.filter((b) => b !== bullet);
+  }
   //   ____    _    __  __ _____   _     ___   ___  ____
   //  / ___|  / \  |  \/  | ____| | |   / _ \ / _ \|  _ \
   // | |  _  / _ \ | |\/| |  _|   | |  | | | | | | | |_) |
@@ -479,13 +555,22 @@ class Game {
         );
         // Check collision with players
         this.players.forEach((player) => {
-          if (bullet.checkCollision(player)) {
+          if (this.checkCollisionBullet(bullet, player)) {
             player.reduceHP(2);
-            this.bullets = this.bullets.filter((b) => b !== bullet);
+            this.deleteBullet(bullet);
+          }
+        });
+        // Check collision with enemies
+        this.enemies.forEach((enemy) => {
+          //
+          if (this.checkCollisionBullet(bullet, enemy)) {
+            enemy.reduceHP(2);
+            this.deleteBullet(bullet);
+            this.deleteEnemy(enemy);
           }
         });
       } else {
-        this.bullets = this.bullets.filter((b) => b !== bullet);
+        this.deleteBullet(bullet);
       }
     });
 
@@ -494,7 +579,20 @@ class Game {
       const pos = enemy.getPosition();
       if (pos) {
         enemy.update();
-        this.canvas.drawRect(pos, 30, 30, "green");
+        this.canvas.drawRect(
+          pos,
+          enemy.getWidth(),
+          enemy.getHeight(),
+          enemy.getColor()
+        );
+
+        // Check collision with player
+        this.players.forEach((player) => {
+          if (this.checkCollisionEnemy(enemy, player)) {
+            player.reduceHP(5);
+            this.deleteEnemy(enemy);
+          }
+        });
       }
     });
 
