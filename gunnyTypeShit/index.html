@@ -11,11 +11,26 @@
         align-items: center;
         height: 100vh;
         margin: 0;
+        position: relative;
+      }
+      #canvas {
+        position: relative;
+      }
+      #shootButton {
+        position: absolute;
+        bottom: 28px;
+        right: 100px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        background-color: salmon;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
     <canvas id="canvas"></canvas>
+    <button id="shootButton">Shoot</button>
     <script src="script.js"></script>
   </body>
 </html>
