@@ -11,10 +11,37 @@
         align-items: center;
         padding: 0;
       }
+
+      .game-container {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 20px;
+      }
+
+      #canvas {
+        border: 2px solid #333;
+      }
+
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      #preview {
+        border: 2px solid #333;
+      }
     </style>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
+    <div class="game-container">
+      <canvas id="canvas"></canvas>
+      <div class="side-panel">
+        <canvas id="preview"></canvas>
+      </div>
+    </div>
     <script src="script.js"></script>
   </body>
 </html>
